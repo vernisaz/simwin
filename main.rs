@@ -1,5 +1,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+
+use std::io::BufReader;
+use std::fs::File;
+use std::io::BufRead;
+
 use std::ffi::OsStr;
 use std::iter::once;
 use std::os::windows::ffi::OsStrExt;
@@ -144,7 +149,7 @@ windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : 
 
 fn main() {
     
-    let app_name = to_wstring("Rust Meets Windows");
+    let app_name = to_wstring("Rust using Windows API");
 
     let h_instance = unsafe { GetModuleHandleW(null_mut()) };
 
@@ -220,6 +225,10 @@ unsafe extern "system" fn window_proc(
 }
 
 unsafe fn on_paint(hWnd: HWND) -> LRESULT {
+    let Ok(file) = File::open("README.md") else {
+        return -1
+    };
+    
     let mut ps = PAINTSTRUCT{ hdc: null_mut(),
     fErase: 0,
     rcPaint: RECT{..Default::default()},
@@ -230,10 +239,15 @@ unsafe fn on_paint(hWnd: HWND) -> LRESULT {
    
     SetTextColor(hdc, 0x00aaaabb);
     SetBkMode(hdc, TRANSPARENT as _);
-   
-    let line = to_wstring("This line was printed from Rust - してもいい");
-
-    TextOutW(hdc, 32, 50, line.as_ptr(), line.len() as _); 
+    
+    let mut start_y = 50;
+    for line in BufReader::new(file).lines() {
+        if let Ok(line) = line {
+            let line = to_wstring(&line);
+            TextOutW(hdc, 32, start_y, line.as_ptr(), line.len() as _);
+            start_y += 21
+        }
+    }
 
     EndPaint(hWnd, &ps) as LRESULT
 }
