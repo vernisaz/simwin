@@ -13,6 +13,10 @@ pub type BOOL = i32;
 //type UINT=u16;
 pub type PCWSTR = *const u16;
 pub type WNDCLASS_STYLES = u32;
+pub type SYS_COLOR_INDEX = i32;
+pub type COLORREF = u32;
+pub type BACKGROUND_MODE = u32;
+pub type DRAW_TEXT_FORMAT = u32;
 
 pub type HWND = *mut core::ffi::c_void;
 
@@ -22,10 +26,13 @@ pub type HICON = *mut core::ffi::c_void;
 pub type HCURSOR = *mut core::ffi::c_void;
 pub type HBRUSH = *mut core::ffi::c_void;
 pub type HMENU = *mut core::ffi::c_void;
+pub type HDC = *mut core::ffi::c_void;
+pub type HGDIOBJ = *mut core::ffi::c_void;
 
 pub type SHOW_WINDOW_CMD = i32;
 pub type WINDOW_STYLE = u32;
 pub type WINDOW_EX_STYLE = u32;
+pub type GET_STOCK_OBJECT_FLAGS = i32;
 
 pub const CS_OWNDC: WNDCLASS_STYLES = 32u32;
 pub const CS_HREDRAW: WNDCLASS_STYLES = 2u32;
@@ -38,7 +45,14 @@ pub const CW_USEDEFAULT: i32 = -2147483648i32;
 
 pub const SW_SHOW: SHOW_WINDOW_CMD = 5i32;
 
+pub const COLOR_BACKGROUND: SYS_COLOR_INDEX = 1i32;
+
 pub const WM_DESTROY: u32 = 2u32;
+pub const WM_PAINT: u32 = 15u32;
+
+pub const TRANSPARENT: BACKGROUND_MODE = 1u32;
+pub const DT_SINGLELINE: DRAW_TEXT_FORMAT = 32u32;
+pub const DT_NOCLIP: DRAW_TEXT_FORMAT = 256u32;
 
 pub type WNDPROC = Option<unsafe extern "system" fn(param0: HWND, param1: u32,
  param2: WPARAM, param3: LPARAM) -> LRESULT>;
@@ -67,6 +81,21 @@ pub struct POINT {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RECT {
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
+}
+
+impl Default for RECT {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+
+#[repr(C)]
 #[derive(Clone, Copy)]
 pub struct MSG {
     pub hwnd: HWND,
@@ -75,6 +104,17 @@ pub struct MSG {
     pub lParam: LPARAM,
     pub time: u32,
     pub pt: POINT,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PAINTSTRUCT {
+    pub hdc: HDC,
+    pub fErase: BOOL,
+    pub rcPaint: RECT,
+    pub fRestore: BOOL,
+    pub fIncUpdate: BOOL,
+    pub rgbReserved: [u8; 32],
 }
 
 windows_targets::link!("kernel32.dll" "system" fn GetModuleHandleW(lpmodulename : PCWSTR) ->  HMODULE);
@@ -91,9 +131,18 @@ windows_targets::link!("user32.dll" "system" fn RegisterClassW(lpwndclass : *con
 windows_targets::link!("kernel32.dll" "system" fn GetLastError() -> u32);
 windows_targets::link!("user32.dll" "system" fn PostQuitMessage(nexitcode : i32));
 windows_targets::link!("user32.dll" "system" fn DefWindowProcW(hwnd : HWND, msg : u32, wparam :  WPARAM, lparam : LPARAM) -> LRESULT);
+windows_targets::link!("user32.dll" "system" fn BeginPaint(hwnd : HWND, lppaint : *mut PAINTSTRUCT) -> HDC);
+windows_targets::link!("user32.dll" "system" fn GetClientRect(hwnd : HWND, lprect : *mut RECT) -> BOOL);
+windows_targets::link!("gdi32.dll" "system" fn SetTextColor(hdc : HDC, color : COLORREF) -> COLORREF);
+windows_targets::link!("gdi32.dll" "system" fn SetBkMode(hdc : HDC, mode : i32) -> i32);
+windows_targets::link!("user32.dll" "system" fn DrawTextW(hdc : HDC, lpchtext : PCWSTR, cchtext : i32, lprc : *mut RECT, format : DRAW_TEXT_FORMAT) -> i32);
+windows_targets::link!("user32.dll" "system" fn EndPaint(hwnd :  HWND, lppaint : *const PAINTSTRUCT) -> BOOL);
+windows_targets::link!("gdi32.dll" "system" fn DeleteDC(hdc : HDC) -> BOOL);
+windows_targets::link!("user32.dll" "system" fn GetWindowDC(hwnd : HWND) -> HDC);
+windows_targets::link!("gdi32.dll" "system" fn GetStockObject(i : GET_STOCK_OBJECT_FLAGS) -> HGDIOBJ);
+windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
 
 fn main() {
-    
     
     let app_name = to_wstring("Rust Meets Windows");
 
@@ -108,7 +157,7 @@ fn main() {
         cbWndExtra: 0,
         hIcon: null_mut(),
         hCursor: unsafe { LoadCursorW(null_mut(), IDC_ARROW) },
-        hbrBackground: null_mut(),
+        hbrBackground: (COLOR_BACKGROUND+1) as _ , //null_mut(),
         lpszMenuName: null_mut(),
     };
 
@@ -135,7 +184,7 @@ fn main() {
         panic!("Failed to create window.");
     }
 
-    unsafe { ShowWindow(hwnd, SW_SHOW) };
+    unsafe { ShowWindow(hwnd, SW_SHOW) ; } 
 
     let mut msg = MSG {
         hwnd: null_mut(),
@@ -165,8 +214,28 @@ unsafe extern "system" fn window_proc(
             PostQuitMessage(0);
             0
         }
+        WM_PAINT => on_paint(hwnd),
         _ => DefWindowProcW(hwnd, msg, w_param, l_param),
     }
+}
+
+unsafe fn on_paint(hWnd: HWND) -> LRESULT {
+    let mut ps = PAINTSTRUCT{ hdc: null_mut(),
+    fErase: 0,
+    rcPaint: RECT{..Default::default()},
+    fRestore: 0,
+    fIncUpdate: 0,
+    rgbReserved: [0; 32]};
+    let hdc = BeginPaint(hWnd, &mut ps);
+   
+    SetTextColor(hdc, 0x00aaaabb);
+    SetBkMode(hdc, TRANSPARENT as _);
+   
+    let line = to_wstring("This line was printed from Rust - してもいい");
+
+    TextOutW(hdc, 32, 50, line.as_ptr(), line.len() as _); 
+
+    EndPaint(hWnd, &ps) as LRESULT
 }
 
 fn to_wstring(s: &str) -> Vec<u16> {
