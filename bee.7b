@@ -1,9 +1,0 @@
-project  =simwin
-#main=test
-main=main
-common =..${~/~}simscript/comm-build.7b:file
-crate_dir=..${~/~}crates
-comp opts=[--extern,windows_targets=C:\Users\sunil\projects\crates\libwindows_targets.rlib,
- -l,static=windows.0.53.0,-L,C:\Users\sunil\projects\side\windows-rs\crates\targets\x86_64_gnu\lib]
-
-include(common);

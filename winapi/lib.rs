@@ -1,15 +1,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use std::io::BufReader;
-use std::fs::File;
-use std::io::BufRead;
-
-use std::ffi::OsStr;
-use std::iter::once;
-use std::os::windows::ffi::OsStrExt;
-use std::ptr::null_mut;
-
 pub type LPARAM = isize;
 pub type LRESULT = isize;
 pub type WPARAM = usize;
@@ -23,16 +14,18 @@ pub type COLORREF = u32;
 pub type BACKGROUND_MODE = u32;
 pub type DRAW_TEXT_FORMAT = u32;
 
-pub type HWND = *mut core::ffi::c_void;
+pub type MUT_PTR_ANY = *mut core::ffi::c_void;
 
-pub type HMODULE = *mut core::ffi::c_void;
-pub type HINSTANCE = *mut core::ffi::c_void;
-pub type HICON = *mut core::ffi::c_void;
-pub type HCURSOR = *mut core::ffi::c_void;
-pub type HBRUSH = *mut core::ffi::c_void;
-pub type HMENU = *mut core::ffi::c_void;
-pub type HDC = *mut core::ffi::c_void;
-pub type HGDIOBJ = *mut core::ffi::c_void;
+pub type HWND = MUT_PTR_ANY;
+
+pub type HMODULE = MUT_PTR_ANY;
+pub type HINSTANCE = MUT_PTR_ANY;
+pub type HICON = MUT_PTR_ANY;
+pub type HCURSOR = MUT_PTR_ANY;
+pub type HBRUSH = MUT_PTR_ANY;
+pub type HMENU = MUT_PTR_ANY;
+pub type HDC = MUT_PTR_ANY;
+pub type HGDIOBJ = MUT_PTR_ANY;
 
 pub type SHOW_WINDOW_CMD = i32;
 pub type WINDOW_STYLE = u32;
@@ -147,114 +140,3 @@ windows_targets::link!("user32.dll" "system" fn GetWindowDC(hwnd : HWND) -> HDC)
 windows_targets::link!("gdi32.dll" "system" fn GetStockObject(i : GET_STOCK_OBJECT_FLAGS) -> HGDIOBJ);
 windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
 
-fn main() {
-    
-    let app_name = to_wstring("Rust using Windows API");
-
-    let h_instance = unsafe { GetModuleHandleW(null_mut()) };
-
-    let wnd_class = WNDCLASSW {
-        style: CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
-        lpfnWndProc: Some(window_proc),
-        hInstance: h_instance,
-        lpszClassName: app_name.as_ptr(),
-        cbClsExtra: 0,
-        cbWndExtra: 0,
-        hIcon: null_mut(),
-        hCursor: unsafe { LoadCursorW(null_mut(), IDC_ARROW) },
-        hbrBackground: (COLOR_BACKGROUND+1) as _ , //null_mut(),
-        lpszMenuName: null_mut(),
-    };
-
-    let class_atom = unsafe { RegisterClassW(&wnd_class) };
-
-    let hwnd = unsafe {
-        CreateWindowExW(
-            0,
-            class_atom as *const u16,
-            app_name.as_ptr(),
-            WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            null_mut(),
-            null_mut(),
-            h_instance,
-            null_mut(),
-        )
-    };
-
-    if hwnd.is_null() {
-        panic!("Failed to create window.");
-    }
-
-    unsafe { ShowWindow(hwnd, SW_SHOW) ; } 
-
-    let mut msg = MSG {
-        hwnd: null_mut(),
-        message: 0,
-        wParam: 0,
-        lParam: 0,
-        time: 0,
-        pt: Default::default(),
-    };
-
-    while unsafe { GetMessageW(&mut msg, null_mut(), 0, 0) } != 0 {
-        unsafe {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-        }
-    }
-}
-
-unsafe extern "system" fn window_proc(
-    hwnd: HWND,
-    msg: u32,
-    w_param: WPARAM,
-    l_param: LPARAM,
-) -> LRESULT {
-    match msg {
-        WM_DESTROY => {
-            PostQuitMessage(0);
-            0
-        }
-        WM_PAINT => on_paint(hwnd),
-        _ => DefWindowProcW(hwnd, msg, w_param, l_param),
-    }
-}
-
-unsafe fn on_paint(hWnd: HWND) -> LRESULT {
-    let Ok(file) = File::open("README.md") else {
-        return -1
-    };
-    
-    let mut ps = PAINTSTRUCT{ hdc: null_mut(),
-    fErase: 0,
-    rcPaint: RECT{..Default::default()},
-    fRestore: 0,
-    fIncUpdate: 0,
-    rgbReserved: [0; 32]};
-    let hdc = BeginPaint(hWnd, &mut ps);
-   
-    SetTextColor(hdc, 0x00aaaabb);
-    SetBkMode(hdc, TRANSPARENT as _);
-    
-    let mut start_y = 50;
-    for line in BufReader::new(file).lines() {
-        if let Ok(line) = line {
-            let line = to_wstring(&line);
-            TextOutW(hdc, 32, start_y, line.as_ptr(), line.len() as _);
-            start_y += 21
-        }
-    }
-
-    EndPaint(hWnd, &ps) as LRESULT
-}
-
-fn to_wstring(s: &str) -> Vec<u16> {
-    OsStr::new(s)
-        .encode_wide()
-        .chain(once(0))
-        .collect()
-}

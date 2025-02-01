@@ -1,0 +1,13 @@
+# copy this file in windows-rs>crates>libs>targets
+# then specify correct type of the library and build
+crate=windows_targets
+
+main=src\lib
+dep_crates=[] 
+# x86_64_gnu or x86_64_gnullvm
+comp opts=[-l,static=windows.0.53.0,-L,..\..\targets\x86_64_gnu\lib]
+common =..${~/~}..${~/~}..${~/~}..${~/~}..${~/~}simscript${~/~}comm-crate.7b:file
+common_test =..${~/~}..${~/~}..${~/~}..${~/~}..${~/~}simscript${~/~}comm-test.7b:file
+crate_dir=..${~/~}..${~/~}..${~/~}..${~/~}..${~/~}crates
+
+include(common);
