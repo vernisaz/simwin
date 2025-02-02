@@ -89,9 +89,6 @@ unsafe extern "system" fn window_proc(
 }
 
 unsafe fn on_paint(hWnd: HWND) -> LRESULT {
-    let Ok(file) = File::open("..\\README.md") else {
-        return -1
-    };
     
     let mut ps = PAINTSTRUCT{ hdc: null_mut(),
     fErase: 0,
@@ -105,14 +102,22 @@ unsafe fn on_paint(hWnd: HWND) -> LRESULT {
     SetBkMode(hdc, TRANSPARENT as _);
     
     let mut start_y = 50;
-    for line in BufReader::new(file).lines() {
-        if let Ok(line) = line {
-            let line = to_wstring(&line);
+    match File::open("..\\README.md") {
+        Ok(file) =>  for line in BufReader::new(file).lines() {
+            if let Ok(line) = line {
+                let line = to_wstring(&line);
+                TextOutW(hdc, 32, start_y, line.as_ptr(), line.len() as _);
+                start_y += 21
+            }
+        }
+        Err(err) => {
+            SetTextColor(hdc, 0x003333dd);
+            let err = format!("{err:?}");
+            let line = to_wstring(&err);
             TextOutW(hdc, 32, start_y, line.as_ptr(), line.len() as _);
-            start_y += 21
         }
     }
-
+    
     EndPaint(hWnd, &ps) as LRESULT
 }
 
