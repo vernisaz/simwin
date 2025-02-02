@@ -98,7 +98,7 @@ unsafe fn on_paint(hWnd: HWND) -> LRESULT {
     rgbReserved: [0; 32]};
     let hdc = BeginPaint(hWnd, &mut ps);
    
-    SetTextColor(hdc, 0x00c0cccc);
+    SetTextColor(hdc, RGB(0xEF, 0xBD, 0x52));
     SetBkMode(hdc, TRANSPARENT as _);
     
     let mut start_y = 50;
