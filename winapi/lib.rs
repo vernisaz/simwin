@@ -8,6 +8,7 @@ pub type BOOL = i32;
 
 //type UINT=u16;
 pub type PCWSTR = *const u16;
+pub type PWSTR = *mut u16;
 pub type WNDCLASS_STYLES = u32;
 pub type SYS_COLOR_INDEX = i32;
 pub type COLORREF = u32;
@@ -26,11 +27,17 @@ pub type HBRUSH = MUT_PTR_ANY;
 pub type HMENU = MUT_PTR_ANY;
 pub type HDC = MUT_PTR_ANY;
 pub type HGDIOBJ = MUT_PTR_ANY;
+pub type HBITMAP = MUT_PTR_ANY;
 
 pub type SHOW_WINDOW_CMD = i32;
 pub type WINDOW_STYLE = u32;
 pub type WINDOW_EX_STYLE = u32;
 pub type GET_STOCK_OBJECT_FLAGS = i32;
+
+pub type MENU_ITEM_MASK = u32;
+pub type MENU_ITEM_TYPE = u32;
+pub type MENU_ITEM_STATE = u32;
+pub type MENU_ITEM_FLAGS = u32;
 
 pub const CS_OWNDC: WNDCLASS_STYLES = 32u32;
 pub const CS_HREDRAW: WNDCLASS_STYLES = 2u32;
@@ -115,6 +122,25 @@ pub struct PAINTSTRUCT {
     pub rgbReserved: [u8; 32],
 }
 
+#[repr(C)]
+//#[cfg(feature = "Win32_Graphics_Gdi")]
+#[derive(Clone, Copy)]
+pub struct MENUITEMINFOW {
+    pub cbSize: u32,
+    pub fMask: MENU_ITEM_MASK,
+    pub fType: MENU_ITEM_TYPE,
+    pub fState: MENU_ITEM_STATE,
+    pub wID: u32,
+    pub hSubMenu: HMENU,
+    pub hbmpChecked: HBITMAP,
+    pub hbmpUnchecked: HBITMAP,
+    pub dwItemData: usize,
+    pub dwTypeData: PWSTR,
+    pub cch: u32,
+    pub hbmpItem: HBITMAP,
+}
+
+
 windows_targets::link!("kernel32.dll" "system" fn GetModuleHandleW(lpmodulename : PCWSTR) ->  HMODULE);
 windows_targets::link!("user32.dll" "system" fn CreateWindowExW(dwexstyle : WINDOW_EX_STYLE, 
   lpclassname : PCWSTR, lpwindowname : PCWSTR, dwstyle : WINDOW_STYLE, x : i32, y : i32, nwidth : i32, nheight : i32,
@@ -139,6 +165,13 @@ windows_targets::link!("gdi32.dll" "system" fn DeleteDC(hdc : HDC) -> BOOL);
 windows_targets::link!("user32.dll" "system" fn GetWindowDC(hwnd : HWND) -> HDC);
 windows_targets::link!("gdi32.dll" "system" fn GetStockObject(i : GET_STOCK_OBJECT_FLAGS) -> HGDIOBJ);
 windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
+
+windows_targets::link!("user32.dll" "system" fn CreateMenu() -> HMENU);
+windows_targets::link!("user32.dll" "system" fn DestroyMenu(hmenu : HMENU) -> BOOL);
+windows_targets::link!("user32.dll" "system" fn InsertMenuItemW(hmenu : HMENU, item : u32, fbyposition : BOOL, lpmi : *const MENUITEMINFOW) -> BOOL);
+windows_targets::link!("user32.dll" "system" fn InsertMenuW(hmenu : HMENU, uposition : u32, uflags : MENU_ITEM_FLAGS, uidnewitem : usize,
+  lpnewitem : PCWSTR) -> BOOL);
+  
 
 pub fn RGB(r: u8, g: u8, b: u8) -> u32 {
     r as u32 | (g as u32) << 8 | (b as u32) << 16
