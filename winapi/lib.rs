@@ -1,5 +1,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+use std::ptr::null_mut;
+use std::iter::once;
+use std::mem;
+use std::ffi::OsStr;
+use std::os::windows::ffi::OsStrExt;
 
 pub type LPARAM = isize;
 pub type LRESULT = isize;
@@ -58,6 +63,35 @@ pub const WM_PAINT: u32 = 15u32;
 pub const TRANSPARENT: BACKGROUND_MODE = 1u32;
 pub const DT_SINGLELINE: DRAW_TEXT_FORMAT = 32u32;
 pub const DT_NOCLIP: DRAW_TEXT_FORMAT = 256u32;
+
+pub const MFT_BITMAP: MENU_ITEM_TYPE = 4u32;
+pub const MFT_MENUBARBREAK: MENU_ITEM_TYPE = 32u32;
+pub const MFT_MENUBREAK: MENU_ITEM_TYPE = 0x40u32;
+pub const MFT_OWNERDRAW: MENU_ITEM_TYPE = 0x100u32;
+pub const MFT_RADIOCHECK: MENU_ITEM_TYPE = 0x200u32;
+pub const MFT_RIGHTJUSTIFY: MENU_ITEM_TYPE = 0x4000u32;
+pub const MFT_RIGHTORDER: MENU_ITEM_TYPE = 0x2000u32;
+pub const MFT_SEPARATOR: MENU_ITEM_TYPE = 0x800u32;
+pub const MFT_STRING: MENU_ITEM_TYPE = 0u32;
+
+pub const MIIM_BITMAP: MENU_ITEM_MASK = 0x80u32;
+pub const MIIM_CHECKMARKS: MENU_ITEM_MASK = 0x8u32;
+pub const MIIM_DATA: MENU_ITEM_MASK = 0x20u32;
+pub const MIIM_FTYPE: MENU_ITEM_MASK = 0x100u32;
+pub const MIIM_ID: MENU_ITEM_MASK = 0x2u32;
+pub const MIIM_STATE: MENU_ITEM_MASK = 1u32;
+pub const MIIM_STRING: MENU_ITEM_MASK = 0x40u32;
+pub const MIIM_SUBMENU: MENU_ITEM_MASK = 4u32;
+pub const MIIM_TYPE: MENU_ITEM_MASK = 16u32;
+
+pub const MFS_CHECKED: MENU_ITEM_STATE = 8u32;
+pub const MFS_DEFAULT: MENU_ITEM_STATE = 0x1000u32;
+pub const MFS_DISABLED: MENU_ITEM_STATE = 3u32;
+pub const MFS_ENABLED: MENU_ITEM_STATE = 0u32;
+pub const MFS_GRAYED: MENU_ITEM_STATE = 3u32;
+pub const MFS_HILITE: MENU_ITEM_STATE = 0x80u32;
+pub const MFS_UNCHECKED: MENU_ITEM_STATE = 0u32;
+pub const MFS_UNHILITE: MENU_ITEM_STATE = 0x0u32;
 
 pub type WNDPROC = Option<unsafe extern "system" fn(param0: HWND, param1: u32,
  param2: WPARAM, param3: LPARAM) -> LRESULT>;
@@ -175,5 +209,32 @@ windows_targets::link!("user32.dll" "system" fn InsertMenuW(hmenu : HMENU, uposi
 
 pub fn RGB(r: u8, g: u8, b: u8) -> u32 {
     r as u32 | (g as u32) << 8 | (b as u32) << 16
+}
+
+pub fn to_wstring(s: &str) -> Vec<u16> {
+    OsStr::new(s)
+        .encode_wide()
+        .chain(once(0))
+        .collect()
+}
+
+impl MENUITEMINFOW {
+    pub fn TextMenuItem(text: impl AsRef<str>, id: u32) -> MENUITEMINFOW {
+        let text = to_wstring(text.as_ref());
+        MENUITEMINFOW {
+            cbSize: mem::size_of::<MENUITEMINFOW>() as _,
+            fMask: MIIM_STRING,
+            fType: MFT_STRING,
+            fState: MFS_ENABLED,
+            wID: id,
+            hSubMenu: null_mut(),
+            hbmpChecked: null_mut(),
+            hbmpUnchecked: null_mut(),
+            dwItemData: 0,
+            dwTypeData: text.as_ptr() as *mut u16,
+            cch: text.len() as _,
+            hbmpItem: null_mut()
+        }
+    }
 }
 

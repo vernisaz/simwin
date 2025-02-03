@@ -5,9 +5,6 @@ use std::io::BufReader;
 use std::fs::File;
 use std::io::BufRead;
 
-use std::ffi::OsStr;
-use std::iter::once;
-use std::os::windows::ffi::OsStrExt;
 use std::ptr::null_mut;
 use simwinapi::*;
 
@@ -119,11 +116,4 @@ unsafe fn on_paint(hWnd: HWND) -> LRESULT {
     }
     
     EndPaint(hWnd, &ps) as LRESULT
-}
-
-fn to_wstring(s: &str) -> Vec<u16> {
-    OsStr::new(s)
-        .encode_wide()
-        .chain(once(0))
-        .collect()
 }
