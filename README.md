@@ -3,7 +3,7 @@
 ## Purpose
 The crate allows to write applications using Windows API.
 
-You can find the full [Windows API](https://github.com/microsoft/windows-rs) here. However,
+You can find the full **Windows API** [here](https://github.com/microsoft/windows-rs). However,
 you may need just a limitted subset for
 small applications. So this project covers the niche.
 
@@ -16,4 +16,4 @@ small applications. So this project covers the niche.
 
 1. Opening a window
 2. Open a File dialog
-3. 
+3. Creating a menu

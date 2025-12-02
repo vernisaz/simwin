@@ -2,6 +2,8 @@ crate=simwinapi
 
 main=lib
 dep_crates=[]
+crate_src=.
+crate main=${main}
 
 comp opts=[--extern,windows_targets=C:\Users\sunil\projects\crates\libwindows_targets.rlib,
  -l,static=windows.0.53.0,-L,C:\Users\sunil\projects\side\windows-rs\crates\targets\x86_64_gnu\lib]

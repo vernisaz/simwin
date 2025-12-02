@@ -198,7 +198,12 @@ windows_targets::link!("user32.dll" "system" fn EndPaint(hwnd :  HWND, lppaint :
 windows_targets::link!("gdi32.dll" "system" fn DeleteDC(hdc : HDC) -> BOOL);
 windows_targets::link!("user32.dll" "system" fn GetWindowDC(hwnd : HWND) -> HDC);
 windows_targets::link!("gdi32.dll" "system" fn GetStockObject(i : GET_STOCK_OBJECT_FLAGS) -> HGDIOBJ);
-windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
+#[link(name = "gdi32")]
+extern "system" {
+    fn TextOutW(hdc: HDC, x: i32, y: i32, lpstring: PCWSTR, c: i32) -> BOOL;
+}
+
+//windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
 
 windows_targets::link!("user32.dll" "system" fn CreateMenu() -> HMENU);
 windows_targets::link!("user32.dll" "system" fn DestroyMenu(hmenu : HMENU) -> BOOL);
