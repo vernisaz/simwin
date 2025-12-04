@@ -114,6 +114,13 @@ unsafe fn on_paint(hWnd: HWND) -> LRESULT {
             TextOutW(hdc, 32, start_y, line.as_ptr(), line.len() as _);
         }
     }
+
+   // Define the rectangle's coordinates
+   let left = 50; let top = 50; let right = 200; let bottom = 150;
+   // Define the width and height of the ellipse for rounded corners
+   let ellipseWidth = 30; let ellipseHeight = 30;
+   // Draw a rounded rectangle
+   RoundRect(hdc, left, top, right, bottom, ellipseWidth, ellipseHeight);
     
     EndPaint(hWnd, &ps) as LRESULT
 }

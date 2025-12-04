@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+extern crate windows_targets;
 use std::ptr::null_mut;
 use std::iter::once;
 use std::mem;
@@ -198,19 +199,19 @@ windows_targets::link!("user32.dll" "system" fn EndPaint(hwnd :  HWND, lppaint :
 windows_targets::link!("gdi32.dll" "system" fn DeleteDC(hdc : HDC) -> BOOL);
 windows_targets::link!("user32.dll" "system" fn GetWindowDC(hwnd : HWND) -> HDC);
 windows_targets::link!("gdi32.dll" "system" fn GetStockObject(i : GET_STOCK_OBJECT_FLAGS) -> HGDIOBJ);
-#[link(name = "gdi32")]
+/*#[link(name = "gdi32")]
 extern "system" {
     fn TextOutW(hdc: HDC, x: i32, y: i32, lpstring: PCWSTR, c: i32) -> BOOL;
-}
+}*/
 
-//windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
+windows_targets::link!("gdi32.dll" "system" fn TextOutW(hdc : HDC, x : i32, y : i32, lpstring : PCWSTR, c : i32) -> BOOL);
 
 windows_targets::link!("user32.dll" "system" fn CreateMenu() -> HMENU);
 windows_targets::link!("user32.dll" "system" fn DestroyMenu(hmenu : HMENU) -> BOOL);
 windows_targets::link!("user32.dll" "system" fn InsertMenuItemW(hmenu : HMENU, item : u32, fbyposition : BOOL, lpmi : *const MENUITEMINFOW) -> BOOL);
 windows_targets::link!("user32.dll" "system" fn InsertMenuW(hmenu : HMENU, uposition : u32, uflags : MENU_ITEM_FLAGS, uidnewitem : usize,
   lpnewitem : PCWSTR) -> BOOL);
-  
+windows_targets::link!("gdi32.dll" "system" fn RoundRect(hdc : HDC, left : i32, top : i32, right : i32, bottom : i32, width : i32, height : i32) -> BOOL);
 
 pub fn RGB(r: u8, g: u8, b: u8) -> u32 {
     r as u32 | (g as u32) << 8 | (b as u32) << 16
