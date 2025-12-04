@@ -9,6 +9,12 @@ small applications. So this project covers the niche.
 
 ## Build
 
+### Build windows_targets
+1. switch to directory winapi/targets
+2. read the instraction inside bee.7b
+3. copy bee.7b in specified directory and run
+
+### Build crate and test
 1. switch to directory winapi
 2. execute `rb`
 
